@@ -1,0 +1,12 @@
+#VRML_SIM R2023b utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/released/projects/appearances/protos/VarnishedPine.proto"
+
+PROTO MyVarnishedPine [
+]
+{
+  VarnishedPine {
+      textureTransform IS textureTransform
+
+  }
+}

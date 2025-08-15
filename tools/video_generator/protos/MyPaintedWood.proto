@@ -1,0 +1,16 @@
+#VRML_SIM R2023b utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/released/projects/appearances/protos/PaintedWood.proto"
+
+PROTO MyPaintedWood [
+  field SFColor colorOverride 1 1 1
+  field SFNode textureTransform NULL
+  field SFFloat IBLStrength 1
+]
+{
+  PaintedWood {
+    colorOverride IS colorOverride
+    textureTransform IS textureTransform
+    IBLStrength IS IBLStrength
+  }
+}
