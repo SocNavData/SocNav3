@@ -6,6 +6,8 @@ This project is a joined effort towards the development of a data-driven Social 
 
 This repository contains the core code and utilities for working with the proposed trajectory-wise dataset (SocNav3). Alongside a baseline implementation to replicate our results, it also includes tools to check and visualize data, supporting dataset extension and further research.
 
+All data required to run the code is available at the following link: [SocNav3_all_data](https://www.dropbox.com/scl/fo/5mdx98kxux31tpz17t737/ABZuqYOXVMrcGJmUGeBQBo0?rlkey=2o9xeghuqsq9hqu5yu1rmrt6v&st=jmcszjb2&dl=0)
+
 ## Dataset
 
 The dataset comprises variables related to raters, trajectories, and rater-trajectory scores. For every rater, together with demographic information, a rating list is stored. The rating list contains tuples ($t$, $c$, $r$), where $t$ is a trajectory identiﬁer (string), $c$ is a context (string), and a $r$ is a score assigned by the rater to the trajectory $t$ given the context $c$.
