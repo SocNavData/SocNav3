@@ -44,7 +44,7 @@ Contexts are textual descriptions of the specific situations that occur during t
 
 The raw dataset contains two main directories: one containing the trajectories and another one containing data about the raters and their ratings. 
 
-The trajectories directory contains JSON ﬁles of recorded trajectories in sub-directories named according to the source of the trajectory data. Each ﬁle contains one trajectory with the structure described in the previous section. There is an additional file ($trajectory_variants.json$) that groups together all the variants of each trajectory (e.g., corresponding to the same scenario with different walls' configurations.)
+The trajectories directory contains JSON ﬁles of recorded trajectories in sub-directories named according to the source of the trajectory data. Each ﬁle contains one trajectory with the structure described in the previous section. There is an additional file (_trajectory_variants.json_) that groups together all the variants of each trajectory (e.g., corresponding to the same scenario with different walls' configurations.)
 
 The ratings directory contains a separate JSON ﬁle for each rater. The rating list includes control questions that allow analyzing the consistency of the data.
 
@@ -64,7 +64,7 @@ Once the labeled dataset is generated, it can be used for training a model produ
 cd dataset
 python3 split_dataset.py --dataset PATH_TO_THE_LABELED_DATASET
 ```
-The default split is 0.9/0.05/0.05. It can be modified using the arguments $trainpercentage$ and $valpercentage$.
+The default split is 0.9/0.05/0.05. It can be modified using the arguments _--trainpercentage_ and _--valpercentage_.
 
 ## Tools
 
