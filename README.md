@@ -113,4 +113,28 @@ also provided in _tools/video_generator_. This tool produces a video recording f
 
 ## Baseline
 
+The SocNav3 dataset has been used to train an RNN-based ALT metric model. The code to train and test the model is available in _baseline_.
+
+### Training
+
+To train the ALT metric model, the labeled dataset has to be split into train/validation/test sets as explained in section _Dataset_. Each trajectory in these sets is converted into a sequence of 1-D vectors that is used as input of the RNN. These vectors include trajectory features, metric-based features and an ad-hoc context embedding.
+
+The context embeddings are generated using queries to a large language model (LLM), which converts each context description into numerical representations. These embeddings capture variables related to factors such as task urgency, risk, and importance. The quantization of these variables is pre-computed and stored in CSV files. We provide four different quantization files (available at [SocNav3_all_data/contexts](https://www.dropbox.com/scl/fo/5t8b6an13kge3a9sbw8eg/AM1GltxDRaYpsbi0jtn91E4?rlkey=s9ybki84pq56xnopler2m9ryw&st=x42myq1y&dl=0)), each corresponding to the outputs of a different LLM.
+
+Given a dataset split and a context quantization file, the training code generates a transformed dataset used to train the model. Additionally, to evaluate the evolution of the training process, it produces qualitative results over several sets of trajectories for different contexts. These sets of trajectories and contexts have to be specified in a configuration file (yaml). We provide the files required for this qualitative test at [SocNav3_all_data/qualitative_tests](https://www.dropbox.com/scl/fo/ukzf55l9z4yemvytg9q17/ADxDSIOzwB8FM_bNtCtcoys?rlkey=k0hyyauzxnavy9f1v29b6j5u1&st=r5g78zyo&dl=0).
+
+In short, the data required for training a model are the following:
+
+* Dataset split: TXT files containing the paths of the labeled trajectories for training, validation and test.
+* Context quantization file: CSV containing the context embeddings produced by a specific LLM.
+* Qualitative test data: Sets of trajectories (one directory per set, including the trajectory files, and a TXT file listing their paths) and a YAML configuration file specifying which trajectory sets and contexts are used in the test.
+
+All these data paths and other training setup parameters are specified in a configuration file (see _train.yaml_). Once configured, you can start the training process with:
+
+```shell
+cd baseline
+python3 train.py --task train.yaml
+```
+
+
 ## How to contribute
