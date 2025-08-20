@@ -70,7 +70,7 @@ The split used in our experiments is available at [SocNav3_all_data/dataset/spli
 
 ## Tools
 
-The repository includes several tools for data analysis, visualization and transformation.
+The repository includes several tools for data analysis,  transformation and visualization.
 
 ### Data analysis
 
@@ -97,7 +97,7 @@ The sequence in a trajectory can be transformed for data normalization and augme
 * **data_random_orientation.py**: applies random orientation changes for augmentation.
 * **transforms.py**: defines a PyTorch transform for each transformation.
 
-## Data visualization
+### Data visualization
 
 Trajectories can be visualized for checking the correctness of the data they include. The tool _tools/data_visualization/view_data.py_ generates a 2D top view of the scenario and the robot trajectory given the corresponding JSON file. It can be run with the following commands:
 
