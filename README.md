@@ -1,6 +1,6 @@
 # SocNav3 dataset code and tools
 
-Official implementation of the paper [Towards Data-Driven Metrics for Social Robot Navigation Benchmarking](...)
+Official repository of the paper [Towards Data-Driven Metrics for Social Robot Navigation Benchmarking](...)
 
 This project is a joined effort towards the development of a data-driven Social Robot Navigation metric to facilitate benchmarking and policy optimization. Motivated by the lack of a standardized method to benchmark Social robot Navigation (SocNav) policies, we propose an **A**ll-encompassing **L**earned **T**rajectory-wise (ALT) metric, which is learned directly from human evaluations of full robot trajectories, conditioned on contexts.
 
@@ -10,7 +10,7 @@ All data required to run the code is available at the following link: [SocNav3_a
 
 ## Dataset
 
-The dataset comprises variables related to raters, trajectories, and rater-trajectory scores. For every rater, together with demographic information, a rating list is stored. The rating list contains tuples ($t$, $c$, $r$), where $t$ is a trajectory identiﬁer (string), $c$ is a context (string), and a $r$ is a score assigned by the rater to the trajectory $t$ given the context $c$.
+The dataset comprises variables related to raters, trajectories, and rater-trajectory scores. For every rater, together with demographic information, a rating list is stored. The rating list contains tuples (_t_, _c_, _r_), where _t_ is a trajectory identiﬁer (string), _c_ is a context (string), and a _r_ is a score assigned by the rater to the trajectory _t_ given the context _c_.
 
 Trajectories contain data on the robot, the task and its context, humans, objects, and the environment. Except for variables related to the task and the environment, which apply to the whole trajectory, variables are recorded with a timestamp at each time step. Next section includes a description of the data stored per trajectory.
 
@@ -48,7 +48,7 @@ The trajectories directory contains JSON ﬁles of recorded trajectories in sub-
 
 The ratings directory contains a separate JSON ﬁle for each rater. The rating list includes control questions that allow analyzing the consistency of the data.
 
-The raw trajectories' dataset can be found at [SocNav3_all_data/dataset/unlabeled](https://www.dropbox.com/scl/fo/ze7op896sqb5tog89xnpl/AEm4g0fbyV_71tpR1ESH7Ic?rlkey=fqngtvz58uf26fbvwkjgnulgi&st=bcn5zuwl&dl=0). The ratings are available at [SocNav3_all_data/ratings](https://www.dropbox.com/scl/fo/yybho991ousbt1grhnd1s/ABwXfRZpGrIQ_Tx8RK9XUBM?rlkey=98qgq181jbdeyaix4ofc4fk4v&st=jw496ojt&dl=0). This last folder contains all the ratings and a selected set of ratings resulting from a consistency analysis.
+The raw trajectories' dataset can be found at [SocNav3_all_data/dataset/unlabeled](https://www.dropbox.com/scl/fo/ze7op896sqb5tog89xnpl/AEm4g0fbyV_71tpR1ESH7Ic?rlkey=ev768vt29mug8b6z2acg3fdjf&st=dce05pti&dl=0). The ratings are available at [SocNav3_all_data/ratings](https://www.dropbox.com/scl/fo/yybho991ousbt1grhnd1s/ABwXfRZpGrIQ_Tx8RK9XUBM?rlkey=nok46jegkd3xsobdwdwhhxygd&st=669o74cw&dl=0). This last folder contains all the ratings and a selected set of ratings resulting from a consistency analysis.
 
 After downloading trajectories and ratings, a labeled dataset can be obtained by running the following commands:
 
@@ -56,7 +56,7 @@ After downloading trajectories and ratings, a labeled dataset can be obtained by
 cd dataset
 python3 label_dataset.py --trajectories PATH_TO_THE_TRAJECTORIES_DIRECTORY --ratings PATH_TO_THE_RATINGS_DIRECTORY
 ```
-A labeled version of the dataset can be directly downloaded from [SocNav3_all_data/dataset/unlabeled](https://www.dropbox.com/scl/fo/go4ud504exi7yr7sq1mwy/AKSA84sasbsPIvOjP78zdoY?rlkey=t0cwl3g6p8cfk8akxnhfnuzeq&st=j89cykq5&dl=0)
+A labeled version of the dataset can be directly downloaded from [SocNav3_all_data/dataset/labeled](https://www.dropbox.com/scl/fo/go4ud504exi7yr7sq1mwy/AKSA84sasbsPIvOjP78zdoY?rlkey=o4k1onc9fxdmr0ysbb68a2b1k&st=4jts131i&dl=0).
 
 Once the labeled dataset is generated, it can be used for training a model producing an ALT-metric. For that, the whole dataset can be split into train/validation/test sets using the script dataset/split_dataset.py as follows:
 
@@ -66,7 +66,50 @@ python3 split_dataset.py --dataset PATH_TO_THE_LABELED_DATASET
 ```
 The default split is 0.9/0.05/0.05. It can be modified using the arguments _--trainpercentage_ and _--valpercentage_.
 
+The split used in our experiments is available at [SocNav3_all_data/dataset/split](https://www.dropbox.com/scl/fo/6r83hv5pvrxhqs43692eb/AKak5wV8neRBl_O5--Tzayc?rlkey=2oujnu64d2jkigz6647y0vz8k&st=xhcqwg5g&dl=0).
+
 ## Tools
+
+The repository includes several tools for data analysis, visualization and transformation.
+
+### Data analysis
+
+The data analysis tools enable the determination of rating quality and the selection of a subset of valid ratings. The tool _tools/data_analysis/check_quality.py_ displays information about the consistency of the raters, given a ratings directory, and produces a consistency map showing both inter- and intra-rater consistency. It can be run with the following commands:
+
+```shell
+cd tools/data_analysis
+python3 check_quality.py PATH_TO_THE_RATINGS_DIRECTORY
+```
+
+According to the consistency analysis, a subset of valid raters can be obtained using _select_valid_raters.py_ as follows:
+
+```shell
+cd tools/data_analysis
+python3 select_valid_raters.py PATH_TO_THE_RATINGS_DIRECTORY OUTPUT_DIRECTORY
+```
+### Data transformation
+
+The sequence in a trajectory can be transformed for data normalization and augmentation purposes. The directory _tools/data_transformation_ includes several transformation utilities with the following functionality:
+
+* **data_mirroring.py**: applies a mirroring transformation to a trajectory.
+* **data_normalization.py**: reframes all poses of a trajectory into the goal frame of reference.
+* **data_random_noise.py**: adds random noise to the poses of each scenario entity for augmentation.
+* **data_random_orientation.py**: applies random orientation changes for augmentation.
+* **transforms.py**: defines a PyTorch transform for each transformation.
+
+## Data visualization
+
+Trajectories can be visualized for checking the correctness of the data they include. The tool _tools/data_visualization/view_data.py_ generates a 2D top view of the scenario and the robot trajectory given the corresponding JSON file. It can be run with the following commands:
+
+```shell
+cd tools/data_visualization
+python3 view_data.py TRAJECTORY_FILE --videowidth VIEW_WIDTH --videoheight VIEW_HEIGHT
+```
+Different arguments can be used to adjust the view and, optionally, generate a video.
+
+A 3D visualization tool built on top of Webots is
+also provided in _tools/video_generator_. This tool produces a video recording for each trajectory, showing a 3D top view of the scenario. This is the tool we used to generate the videos shown to the raters in the survey.
+
 
 ## Baseline
 
