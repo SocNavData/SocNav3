@@ -90,12 +90,13 @@ FILES = config_data["FILES"]
 NAMES = config_data["NAMES"]
 COLORS = config_data["COLORS"]
 CONTEXTS = config_data["CONTEXTS"]
+ABBREVIATED_CONTEXTS = config_data["ABBREVIATED_CONTEXTS"]
 
 data_root = args.dataroot
 
-BATCH_SIZE = 1#32
+BATCH_SIZE = 32
 FIG_COLS = 2
-FIG_ROWS = 2#len(config_data["CONTEXTS"])//2
+FIG_ROWS = len(config_data["CONTEXTS"])//2
 
 fig, axes = plt.subplots(FIG_ROWS, FIG_COLS, figsize=(5*FIG_ROWS, 3*FIG_COLS))
 
@@ -116,7 +117,7 @@ for i_d, d in enumerate(FILES):
     d = os.path.join(data_root, d)
     q_preds = {}
     q_indices = {}
-    for context in CONTEXTS:
+    for abbreviated_context, context in zip(ABBREVIATED_CONTEXTS, CONTEXTS):
         print(d)
         qual_set = TrajectoryDataset(d, contextQ_file, path = data_root, frame_threshold = FRAME_THRESHOLD, label_exists= False, 
                                overwrite_context=context, data_augmentation=False)
@@ -130,7 +131,6 @@ for i_d, d in enumerate(FILES):
         distances = []
         with torch.no_grad():
             for trajectories, _, slengths in qual_loader:
-                # print(slengths)
                 
                 for t in trajectories:
                     distances_t = []
@@ -147,8 +147,8 @@ for i_d, d in enumerate(FILES):
             print(distances)
         sort_idx = np.argsort(np.array(distances))
         idx = np.arange(0, len(predictions), sample_step)
-        q_indices[context] = np.array(distances)[sort_idx]
-        q_preds[context] = np.array(predictions)[sort_idx]#[idx]
+        q_indices[abbreviated_context] = np.array(distances)[sort_idx]
+        q_preds[abbreviated_context] = np.array(predictions)[sort_idx]
         print(context, predictions)
 
     for idx, context in enumerate(q_preds.keys()):

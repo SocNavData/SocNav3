@@ -39,35 +39,35 @@ def plot_predictions_vs_expected(predictions, labels):
 
 def plot_qualitative_multiple(predicted_ratings, name, context, color, sample_step = 1., ax=None, indices=None, add_xlabel=True, add_ylabel=True):
     # print(context)
-    if "battery" in context:
-        bp = context.split("%")[0][-2:]
-        context = f"{bp} battery"
-    elif "fire" in context:
-        context = "fire"
-    elif context == "A robot is working with lab samples. The samples contain a deadly virus.":
-        context = "lab"
-    elif context == "A restaurant robot is looking for a fire extinguisher, as it just detected a fire.":
-        context = "fire"
-    elif context == "A hospital robot is looking for a fire extinguisher, as it just detected a fire.":
-        context = "fire"        
-    elif context == "A hospital assistant robot has been asked to go to the goal, with no additional context.":
-        context = "hospital"
-    elif context == "A delivery robot is navigating in a hospital. It works with fragile objects.":
-        context = "fragile"
-    elif context == "A robot is navigating as part of a collection task in a library. It works with fragile objects.":
-        context = "library"
-    elif context == "A museum guide robot has been asked to go to the goal shown, with no additional context.":
-        context = "museum"      
-    elif context == "A robot is performing routine tasks in a museum.":
-        context = "museum"      
-    elif  "An idle robot working in a home goes to recharge its battery" in context:
-        context = "home"
-    elif  "office" in context:
-        context = "office"
-    elif  "warehouse" in context:
-        context = "warehouse"
-    elif  "library" in context:
-        context = "library"
+    # if "battery" in context:
+    #     bp = context.split("%")[0][-2:]
+    #     context = f"{bp} battery"
+    # elif "fire" in context:
+    #     context = "fire"
+    # elif context == "A robot is working with lab samples. The samples contain a deadly virus.":
+    #     context = "lab"
+    # elif context == "A restaurant robot is looking for a fire extinguisher, as it just detected a fire.":
+    #     context = "fire"
+    # elif context == "A hospital robot is looking for a fire extinguisher, as it just detected a fire.":
+    #     context = "fire"        
+    # elif context == "A hospital assistant robot has been asked to go to the goal, with no additional context.":
+    #     context = "hospital"
+    # elif context == "A delivery robot is navigating in a hospital. It works with fragile objects.":
+    #     context = "fragile"
+    # elif context == "A robot is navigating as part of a collection task in a library. It works with fragile objects.":
+    #     context = "library"
+    # elif context == "A museum guide robot has been asked to go to the goal shown, with no additional context.":
+    #     context = "museum"      
+    # elif context == "A robot is performing routine tasks in a museum.":
+    #     context = "museum"      
+    # elif  "An idle robot working in a home goes to recharge its battery" in context:
+    #     context = "home"
+    # elif  "office" in context:
+    #     context = "office"
+    # elif  "warehouse" in context:
+    #     context = "warehouse"
+    # elif  "library" in context:
+    #     context = "library"
 
     if ax is None:
         fig, ax = plt.subplots(figsize=(12, 7))
