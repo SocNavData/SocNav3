@@ -56,6 +56,9 @@ After downloading trajectories and ratings, a labeled dataset can be obtained by
 cd dataset
 python3 label_dataset.py --trajectories PATH_TO_THE_TRAJECTORIES_DIRECTORY --ratings PATH_TO_THE_RATINGS_DIRECTORY
 ```
+
+The process creates two directories with the labeled trajectories, one including the control trajectories and another one with the remaining trajectories.
+
 A labeled version of the dataset can be directly downloaded from [SocNav3_all_data/dataset/labeled](https://www.dropbox.com/scl/fo/go4ud504exi7yr7sq1mwy/AKSA84sasbsPIvOjP78zdoY?rlkey=o4k1onc9fxdmr0ysbb68a2b1k&st=4jts131i&dl=0).
 
 Once the labeled dataset is generated, it can be used for training a model producing an ALT-metric. For that, the whole dataset can be split into train/validation/test sets using the script dataset/split_dataset.py as follows:
@@ -129,11 +132,28 @@ In short, the data required for training a model are the following:
 * Context quantization file: CSV containing the context embeddings produced by a specific LLM.
 * Qualitative test data: Sets of trajectories (one directory per set, including the trajectory files, and a TXT file listing their paths) and a YAML configuration file specifying which trajectory sets and contexts are used in the test.
 
-All these data paths and other training setup parameters are specified in a configuration file (see _train.yaml_). Once configured, you can start the training process with:
+All these data paths and other training setup parameters are specified in a configuration file (see _train.yaml_). Once configured, the training process can be started with:
 
 ```shell
 cd baseline
 python3 train.py --task train.yaml
+```
+### Model evaluation
+
+We provide several scripts to evaluate a trained model:
+
+* _evaluate_model.py_ : Generates score predictions for the specified labeled test set using a trained model and prints the Mean Squared Error (MSE) and Mean Absolute Error (MAE).Run the script with:
+
+```shell
+cd baseline
+python3 evaluate_model.py --model MODEL_PATH --dataset TEST_SET_FILE --dataroot MAIN_DIRECTORY_OF_THE_TEST_SET_FILE --context CONTEXT_QUANTIZATION_FILE
+```
+
+* _control_results.py_ : Compares the predictions produced by the specified model on the control questions and prints statistics summarizing the comparison. Additionally, it generates a plot showing the mean and standard deviation of the control questions and the model’s estimations. Run the script with:
+
+```shell
+cd baseline
+python3 control_results.py --model MODEL_PATH --control_path DIRECTORY_WITH_THE_CONTROL_LABELED_TRAJECTORIES --context CONTEXT_QUANTIZATION_FILE
 ```
 
 
