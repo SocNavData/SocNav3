@@ -13,9 +13,9 @@ from matplotlib.patches import Patch
 from matplotlib.legend_handler import HandlerTuple
 import argparse
 
-parser = argparse.ArgumentParser(prog='control results',
-                    description='Evaluate the specified model againts the control questions.')
-parser.add_argument('--model', type=str, nargs="?", required = True, help="Model used for rating prediction.")
+parser = argparse.ArgumentParser(prog='control_results',
+                    description='Evaluates the specified model against the control questions.')
+parser.add_argument('--model', type=str, nargs="?", required = True, help="Model trained for rating prediction.")
 parser.add_argument('--context', type=str, nargs="?", required = True,  help="Context file for the generation of the context variables.")
 parser.add_argument('--control_path', type=str, nargs="?", default='.', help="Path to the labeled control trajectories.")
 

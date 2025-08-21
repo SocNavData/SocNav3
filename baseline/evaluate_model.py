@@ -5,9 +5,19 @@ from torch.nn import functional as F
 import numpy as np
 from rnn import RNNModel
 from dataset_rnn import TrajectoryDataset, collate_fn
+import argparse
+
+parser = argparse.ArgumentParser(prog='evaluate_model',
+                    description='Evaluates the specified model on a given dataset.')
+parser.add_argument('--model', type=str, nargs="?", required = True, help="Model trained for rating prediction.")
+parser.add_argument('--context', type=str, nargs="?", required = True,  help="Context file for the generation of the context variables.")
+parser.add_argument('--dataset', type=str, nargs="?", default='.', help="Dataset file used for testing the model (TXT)")
+parser.add_argument('--dataroot', type=str, nargs="?", default='.', help="Data root directory.")
+
+args = parser.parse_args()
 
 
-checkpoint_path = sys.argv[1]
+checkpoint_path = args.model
 print(checkpoint_path)
 model_name = checkpoint_path
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -55,10 +65,10 @@ model = model.to(device)
 
 model.load_state_dict(checkpoint['model_state_dict'], strict=True)
 
-datafile = sys.argv[2]
-contextQ_file = sys.argv[3]
+datafile = args.dataset
+contextQ_file = args.context
 
-dataset = TrajectoryDataset(datafile, contextQ_file, path = '../dataset', limit=-1, frame_threshold=FRAME_THRESHOLD, data_augmentation=False, reload = False)
+dataset = TrajectoryDataset(datafile, contextQ_file, path = args.dataroot, limit=-1, frame_threshold=FRAME_THRESHOLD, data_augmentation=False, reload = False)
 loader = DataLoader(dataset,batch_size=32, shuffle=False, collate_fn=collate_fn)
 
 mse_function = torch.nn.MSELoss().to(device)
