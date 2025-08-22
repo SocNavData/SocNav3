@@ -59,7 +59,7 @@ CONTEXTQ_FILE = config_data["CONTEXTQ_FILE"]
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print("Using device:", device)
 
-QTEST_PATH = config_data["QTEST_PATH"]
+Q_TEST_PATH = config_data["Q_TEST_PATH"]
 config_qtest = yaml.load(open(config_data['Q_TEST_FILE'], "r"), Loader=yaml.Loader)
 Q_FILES = config_qtest["FILES"]
 Q_NAMES = config_qtest["NAMES"]
@@ -333,7 +333,7 @@ def get_qual_loader(file_path):
     # context = {"urgency":98., "importance":98., "risk":95 , "distance_from_human":95., "minimum_speed":20, "average_speed":15., "maximum_speed":15.}
     for context in CONTEXTS:
         print(f"Creating q_test for: {context}")
-        qual_set = TrajectoryDataset(file_path, CONTEXTQ_FILE, path = QTEST_PATH, frame_threshold=FRAME_THRESHOLD, label_exists=False, overwrite_context=context)
+        qual_set = TrajectoryDataset(file_path, CONTEXTQ_FILE, path = Q_TEST_PATH, frame_threshold=FRAME_THRESHOLD, label_exists=False, overwrite_context=context)
         qual_loader = DataLoader(qual_set,  batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
         q_loaders.append((context, files, qual_loader))
     return q_loaders
@@ -342,7 +342,7 @@ qual_loaders = {}
 for id, path in enumerate(Q_FILES):
     speed = Q_NAMES[id]
     print(f"Processing files with {speed}")
-    qual_loaders[speed] = get_qual_loader(os.path.join(QTEST_PATH,path))
+    qual_loaders[speed] = get_qual_loader(os.path.join(Q_TEST_PATH,path))
 
 model, checkpoint = train_model(hidden_size=HIDDEN_SIZE, num_epochs=MAX_EPOCHS, num_layers=NUM_LAYERS,learning_rate=LR, patience= MAX_PATIENCE, batch_size= BATCH_SIZE)
 if UPLOAD_TO_WANDB is True:
