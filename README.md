@@ -18,6 +18,8 @@ Contexts are textual descriptions of the specific situations that occur during t
 
 ### Data stored per trajectory
 
+The following table summarizes the data stored per trajectory.
+
 | **Type**       | **Variable**            | **Description** |
 |----------------|-------------------------|-----------------|
 | **Robot**      | Pose                    | 2D position (m) and orientation (rad) on the plane. |
@@ -166,3 +168,4 @@ python3 plot_qual_with_context.py --model MODEL_FILE --config QUALITATIVE_TEST_C
 ```
 
 ## How to contribute
+We encourage the community to help scale the dataset by contributing new trajectories. 

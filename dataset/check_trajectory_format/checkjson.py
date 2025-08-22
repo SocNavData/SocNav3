@@ -4,7 +4,6 @@ import json
 import multiprocessing
 
 import fastjsonschema
-import jsbeautifier
 import numpy as np
 import argparse
 
@@ -464,9 +463,7 @@ if __name__ == "__main__":
         output_path = '.'.join(input_file.split('.')[:-1])+"_checked.json"
         print("Saving output to:", output_path)
         with open(output_path, 'w') as f:
-            options = jsbeautifier.default_options()
-            options.indent_size = 2
-            f.write(jsbeautifier.beautify(json.dumps(dict_instance), options))
+            json.dump(dict_instance, f, indent=4)
 
     with multiprocessing.Pool(10) as pool:
         results = pool.map(do_it, args.files)
