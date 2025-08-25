@@ -123,7 +123,7 @@ The SocNav3 dataset has been used to train an RNN-based ALT metric model. The co
 
 ### Model training
 
-Before training a model, the labeled dataset has to be split into train/validation/test sets as explained in section _Dataset_. Each trajectory in these sets is converted into a sequence of 1-D vectors that is used as input of the RNN. These vectors include trajectory features, metric-based features and an ad-hoc context embedding.
+Before training a model, the labeled dataset has to be split into train/validation/test sets as explained in section [Dataset](#dataset). Each trajectory in these sets is converted into a sequence of 1-D vectors that is used as input of the RNN. These vectors include trajectory features, metric-based features and an ad-hoc context embedding.
 
 The context embeddings are generated using queries to a large language model (LLM), which converts each context description into numerical representations. These embeddings capture variables related to factors such as task urgency, risk, and importance. The quantization of these variables is pre-computed and stored in CSV files. We provide four different quantization files (available at [SocNav3_all_data/contexts](https://www.dropbox.com/scl/fo/5t8b6an13kge3a9sbw8eg/AM1GltxDRaYpsbi0jtn91E4?rlkey=s9ybki84pq56xnopler2m9ryw&st=x42myq1y&dl=0)), each corresponding to the outputs of a different LLM.
 
@@ -178,7 +178,7 @@ We encourage the community to help **scale the dataset** by contributing **new t
 
 To contribute new trajectories:  
 
-1. **Record your data** according to the format described in the _Data format_ section.  
+1. **Record your data** according to the format described in section [Data format](#data-format).  
 2. **Validate each trajectory file** using the tool _checkjson.py_:  
    ```bash
    cd dataset/check_trajectory_format
@@ -190,7 +190,7 @@ To contribute new trajectories:
     cd tools/data_visualization
     python3 view_data.py TRAJECTORY_FILE --videowidth VIEW_WIDTH --videoheight VIEW_HEIGHT
     ```
-4. Contact us to share your trajectories: 
+4. **Contact us** to share your trajectories: 
  * Luis J. Manso: l.manso@aston.ac.uk 
  * Pilar Bachiller-Burgos: pilarb@unex.es
 
