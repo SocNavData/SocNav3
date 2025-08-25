@@ -6,19 +6,20 @@ This project is a joined effort towards the development of a data-driven Social 
 
 This repository contains the core code and utilities for working with the proposed trajectory-wise dataset (SocNav3). Alongside a baseline implementation to replicate our results, it also includes tools to check and visualize data, supporting dataset extension and further research.
 
-All data required to run the code is available at the following link: [SocNav3_all_data](https://www.dropbox.com/scl/fo/5mdx98kxux31tpz17t737/ABZuqYOXVMrcGJmUGeBQBo0?rlkey=2o9xeghuqsq9hqu5yu1rmrt6v&st=jmcszjb2&dl=0)
+All data required to run the code is available at the following link: [SocNav3_all_data](https://www.dropbox.com/scl/fo/5mdx98kxux31tpz17t737/ABZuqYOXVMrcGJmUGeBQBo0?rlkey=70f89t67bg4zoa6g6lw5dcflg&st=2o6n9lbn&dl=0)
 
 ## Dataset
 
-The dataset comprises variables related to raters, trajectories, and rater-trajectory scores. For every rater, together with demographic information, a rating list is stored. The rating list contains tuples (_t_, _c_, _r_), where _t_ is a trajectory identiﬁer (string), _c_ is a context (string), and a _r_ is a score assigned by the rater to the trajectory _t_ given the context _c_.
+The dataset comprises variables related to raters, trajectories, and rater-trajectory scores. For every rater, together with demographic information, a rating list is stored. The rating list contains tuples (_t_, _c_, _r_), where _t_ is a trajectory identiﬁer (string), _c_ is a context (string), and _r_ is a score assigned by the rater to the trajectory _t_ given the context _c_.
 
 Trajectories contain data on the robot, the task and its context, humans, objects, and the environment. Except for variables related to the task and the environment, which apply to the whole trajectory, variables are recorded with a timestamp at each time step. Next section includes a description of the data stored per trajectory.
 
 Contexts are textual descriptions of the specific situations that occur during the trajectory. They are not necessarily bound to trajectories when trajectories are recorded; this enables us to vary the context to explore how different contexts affect the perception of the same trajectory.
 
-### Data stored per trajectory
+### Data format
 
 The following table summarizes the data stored per trajectory.
+A JSON schema with the required structure can also be found at _dataset/check_trajectory_format/schema.json_. Additionally, trajectory files can be validated using the tool _dataset/check_trajectory_format/checkjson.py_.
 
 | **Type**       | **Variable**            | **Description** |
 |----------------|-------------------------|-----------------|
@@ -54,7 +55,7 @@ The raw trajectories' dataset can be found at [SocNav3_all_data/dataset/unlabele
 
 After downloading trajectories and ratings, a labeled dataset can be obtained by running the following commands:
 
-```shell
+```bash
 cd dataset
 python3 label_dataset.py --trajectories PATH_TO_THE_TRAJECTORIES_DIRECTORY --ratings PATH_TO_THE_RATINGS_DIRECTORY
 ```
@@ -65,7 +66,7 @@ A labeled version of the dataset can be directly downloaded from [SocNav3_all_da
 
 Once the labeled dataset is generated, it can be used for training a model producing an ALT-metric. For that, the whole dataset can be split into train/validation/test sets using the script dataset/split_dataset.py as follows:
 
-```shell
+```bash
 cd dataset
 python3 split_dataset.py --dataset PATH_TO_THE_LABELED_DATASET
 ```
@@ -81,14 +82,14 @@ The repository includes several tools for data analysis,  transformation and vis
 
 The data analysis tools enable the determination of rating quality and the selection of a subset of valid ratings. The tool _tools/data_analysis/check_quality.py_ displays information about the consistency of the raters, given a ratings directory, and produces a consistency map showing both inter- and intra-rater consistency. It can be run with the following commands:
 
-```shell
+```bash
 cd tools/data_analysis
 python3 check_quality.py PATH_TO_THE_RATINGS_DIRECTORY
 ```
 
 According to the consistency analysis, a subset of valid raters can be obtained using _select_valid_raters.py_ as follows:
 
-```shell
+```bash
 cd tools/data_analysis
 python3 select_valid_raters.py PATH_TO_THE_RATINGS_DIRECTORY OUTPUT_DIRECTORY
 ```
@@ -106,7 +107,7 @@ The sequence in a trajectory can be transformed for data normalization and augme
 
 Trajectories can be visualized for checking the correctness of the data they include. The tool _tools/data_visualization/view_data.py_ generates a 2D top view of the scenario and the robot trajectory given the corresponding JSON file. It can be run with the following commands:
 
-```shell
+```bash
 cd tools/data_visualization
 python3 view_data.py TRAJECTORY_FILE --videowidth VIEW_WIDTH --videoheight VIEW_HEIGHT
 ```
@@ -128,12 +129,14 @@ The context embeddings are generated using queries to a large language model (LL
 
 To run the training, the different parameters used in the process must be specified in a YAML configuration file. Among other parameters related with the model architecture, the number of epochs, the batch size, etc., it includes arguments for indicating the dataset split (TXT files containing the paths of the labeled trajectories for training, validation and test) and the context quantization file (i.e., CSV file containing the context embeddings produced by a specific LLM). The file _baseline/train.yaml_ shows an example of such configuration. Once configured, the training can be started with:
 
-```shell
+```bash
 cd baseline
 python3 train.py --task YAML_TRAINING_CONFIGURATION_FILE
 ```
 
-During execution, the training process displays progress information, including the training and validation loss, the current epoch, and any loss improvements. Additionally, it generates two types of plots:
+A baseline model trained using this procedure can be found at [SocNav3/models/](https://www.dropbox.com/scl/fo/bzkwsh152rk5dt0ifbdgx/AFnYIkQ3H8IhIYh218l3Y9M?rlkey=p7heojtjvjgg7k0wcyw9lxdan&st=e7tzlkgh&dl=0).
+
+During execution, the training process displays progress information, including the training and validation loss, the current epoch, and loss improvements. Additionally, it generates two types of plots:
 
 * A plot comparing the expected versus predicted outputs on the test set.
 
@@ -148,24 +151,54 @@ We provide several scripts to evaluate a trained model:
 
 * _evaluate_model.py_ : Generates score predictions for the specified labeled test set using a trained model and prints the Mean Squared Error (MSE) and Mean Absolute Error (MAE).Run the script with:
 
-```shell
+```bash
 cd baseline
 python3 evaluate_model.py --model MODEL_FILE --dataset TEST_SET_FILE --dataroot MAIN_DIRECTORY_OF_THE_TEST_SET_FILE --context CONTEXT_QUANTIZATION_FILE
 ```
 
 * _control_results.py_ : Compares the predictions produced by the specified model on the control questions and prints statistics summarizing the comparison. Additionally, it generates a plot showing the mean and standard deviation of the control questions and the model’s estimations. Run the script with:
 
-```shell
+```bash
 cd baseline
 python3 control_results.py --model MODEL_FILE --control_path DIRECTORY_WITH_THE_CONTROL_LABELED_TRAJECTORIES --context CONTEXT_QUANTIZATION_FILE
 ```
 
 * _plot_qual_with_contexts.py_ : Generates (and, optionally, saves) qualitative plots for specific sets of trajectories and contexts. Both the trajectories and contexts must be specified in a configuration file, which is passed as an argument to the script. Each trajectory set is assumed to correspond to the same scenario but with different robot trajectories. Sample qualitative test sets and configuration files can be downloaded from [SocNav3_all_data/qualitative_tests](https://www.dropbox.com/scl/fo/ukzf55l9z4yemvytg9q17/ADxDSIOzwB8FM_bNtCtcoys?rlkey=k0hyyauzxnavy9f1v29b6j5u1&st=r5g78zyo&dl=0). Run the script with:  
 
-```shell
+```bash
 cd baseline
 python3 plot_qual_with_context.py --model MODEL_FILE --config QUALITATIVE_TEST_CONFIG_FILE --dataroot MAIN_DIRECTORY_OF_THE_TRAJECTORY_FILES --context CONTEXT_QUANTIZATION_FILE
 ```
 
-## How to contribute
-We encourage the community to help scale the dataset by contributing new trajectories. 
+## How to Contribute
+
+We encourage the community to help **scale the dataset** by contributing **new trajectories** and **ratings**. A sufficiently large and diverse dataset extension will enable the development of a consistent and reliable **data-driven SocNav metric** that benefits the entire community.
+
+### **Contributing New Trajectories**
+
+To contribute new trajectories:  
+
+1. **Record your data** according to the format described in the _Data format_ section.  
+2. **Validate each trajectory file** using the tool _checkjson.py_:  
+   ```bash
+   cd dataset/check_trajectory_format
+   python3 checkjson.py TRAJECTORY_FILES
+   ```
+3. **Visualize trajectories** to ensure that coordinate and unit systems are correct using the tool _view_data.py_:
+
+   ```bash
+    cd tools/data_visualization
+    python3 view_data.py TRAJECTORY_FILE --videowidth VIEW_WIDTH --videoheight VIEW_HEIGHT
+    ```
+4. Contact us to share your trajectories: 
+ * Luis J. Manso: l.manso@aston.ac.uk 
+ * Pilar Bachiller-Burgos: pilarb@unex.es
+
+Alternatively, you can share your trajectories directly, and we will run the validation checks for you.
+
+Once validated, we will add your trajectories to the dataset and include your name/organization in the list of SocNav3 contributors.
+
+### **Contributing New Ratings**
+
+To contribute new ratings, use our [Survey Tool](https://vps-fa03b8f8.vps.ovh.net:5421/).
+You’ll find detailed instructions there to guide you through the steps required to complete the rating process.
