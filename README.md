@@ -2,9 +2,9 @@
 
 Official repository of the paper [Towards Data-Driven Metrics for Social Robot Navigation Benchmarking](...)
 
-This project is a joined effort towards the development of a data-driven Social Robot Navigation metric to facilitate benchmarking and policy optimization. Motivated by the lack of a standardized method to benchmark Social robot Navigation (SocNav) policies, we propose an **A**ll-encompassing **L**earned **T**rajectory-wise (ALT) metric, which is learned directly from human evaluations of full robot trajectories, conditioned on contexts.
+This project is a joined effort towards the development of a data-driven Social Robot Navigation metric to facilitate benchmarking and policy optimization. Motivated by the lack of a standardized method to benchmark Social robot Navigation (SocNav) policies, we propose an **A**ll-encompassing **L**earned **T**rajectory-wise (ALT) metric, which is learned directly from human evaluations of full robot trajectories, conditioned on goals and contexts.
 
-This repository contains the core code and utilities for working with the proposed trajectory-wise dataset (SocNav3). Alongside a baseline implementation to replicate our results, it also includes tools to check and visualize data, supporting dataset extension and further research.
+This repository contains the core code and utilities for working with the proposed dataset (SocNav3). Alongside a baseline implementation to replicate our results, it also includes tools to check and visualize data, supporting dataset extension and further research.
 
 All data required to run the code is available at the following link: [SocNav3_all_data](https://www.dropbox.com/scl/fo/5mdx98kxux31tpz17t737/ABZuqYOXVMrcGJmUGeBQBo0?rlkey=70f89t67bg4zoa6g6lw5dcflg&st=2o6n9lbn&dl=0)
 
@@ -27,7 +27,7 @@ A JSON schema with the required structure can also be found at _dataset/check_tr
 |                | Speed                   | Lineal (m/s), angular (rad/s). |
 |                | Drive                   | Categorical (differential / omni / ackerman). |
 |                | Shape                   | 2D *circle* (radius), *rectangle* (width, height), or *polygon* (list of points). |
-| **Task**       | Type                    | Task type, either *“go-to”*, *“guide-to”* or *“follow”*. |
+| **Task**       | Type                    | Task type, either *“go-to”*, *“guide-to”* or *“follow”* $^*$. |
 |                | Position + threshold    | For go-to and guide-to tasks. 2D position + threshold (m). |
 |                | Orientation + threshold | For go-to and guide-to tasks. Orientation + threshold (rad). |
 |                | Human identifier        | For *guide-to* and *follow* tasks. |
@@ -43,11 +43,13 @@ A JSON schema with the required structure can also be found at _dataset/check_tr
 |                | Grid                    | Occupancy map: 2D grid + resolution (m/cell). |
 |                | Area semantics          | Free text describing the area, e.g., “indoor”, “outdoor”, “kitchen”, “a science museum”. |
 
+$^*$ The current version of the dataset (as of 2025-08-25), contains *“go-to”* trajectories exclusively  .
+
 ### Data organization
 
 The raw dataset contains two main directories: one containing the trajectories and another one containing data about the raters and their ratings. 
 
-The trajectories directory contains JSON ﬁles of recorded trajectories in sub-directories named according to the source of the trajectory data. Each ﬁle contains one trajectory with the structure described in the previous section. There is an additional file (_trajectory_variants.json_) that groups together all the variants of each trajectory (e.g., corresponding to the same scenario with different walls' configurations.)
+The trajectories directory contains JSON ﬁles of recorded trajectories in sub-directories named according to the source of the trajectory data. Each ﬁle contains one trajectory with the structure described in the previous section. There is an additional file (_trajectory_variants.json_) that groups together all the variants of each trajectory (e.g., corresponding to the same scenario with different walls' configurations).
 
 The ratings directory contains a separate JSON ﬁle for each rater. The rating list includes control questions that allow analyzing the consistency of the data.
 
@@ -119,7 +121,7 @@ also provided in _tools/video_generator_. This tool produces a video recording f
 
 ## Baseline
 
-The SocNav3 dataset has been used to train an RNN-based ALT metric model. The code to train and test the model is available in _baseline_.
+The SocNav3 dataset has been used to train an RNN-based ALT metric model. The code to train and test the model is available in the _baseline_ subdirectory.
 
 ### Model training
 
@@ -127,7 +129,7 @@ Before training a model, the labeled dataset has to be split into train/validati
 
 The context embeddings are generated using queries to a large language model (LLM), which converts each context description into numerical representations. These embeddings capture variables related to factors such as task urgency, risk, and importance. The quantization of these variables is pre-computed and stored in CSV files. We provide four different quantization files (available at [SocNav3_all_data/contexts](https://www.dropbox.com/scl/fo/5t8b6an13kge3a9sbw8eg/AM1GltxDRaYpsbi0jtn91E4?rlkey=s9ybki84pq56xnopler2m9ryw&st=x42myq1y&dl=0)), each corresponding to the outputs of a different LLM.
 
-To run the training, the different parameters used in the process must be specified in a YAML configuration file. Among other parameters related with the model architecture, the number of epochs, the batch size, etc., it includes arguments for indicating the dataset split (TXT files containing the paths of the labeled trajectories for training, validation and test) and the context quantization file (i.e., CSV file containing the context embeddings produced by a specific LLM). The file _baseline/train.yaml_ shows an example of such configuration. Once configured, the training can be started with:
+The model's hyperparameters are specified in a YAML file. Among other parameters related with the model architecture, the number of epochs, the batch size, etc., it includes the dataset split (TXT files containing the paths of the labeled trajectories for training, validation and testing) and the context quantization file (i.e., CSV file containing the context embeddings produced by a specific LLM). The file _baseline/train.yaml_ shows an example of such configuration. The training can be started with:
 
 ```bash
 cd baseline
@@ -147,16 +149,16 @@ For the second plot, the sets of trajectories and contexts must be specified in 
 
 ### Model evaluation
 
-We provide several scripts to evaluate a trained model:
+We provide scripts to evaluate a trained model:
 
-* _evaluate_model.py_ : Generates score predictions for the specified labeled test set using a trained model and prints the Mean Squared Error (MSE) and Mean Absolute Error (MAE).Run the script with:
+* _evaluate_model.py_ : Generates score predictions for the specified labeled test set using a trained model and prints the Mean Squared Error (MSE) and Mean Absolute Error (MAE). Run the script with:
 
 ```bash
 cd baseline
 python3 evaluate_model.py --model MODEL_FILE --dataset TEST_SET_FILE --dataroot MAIN_DIRECTORY_OF_THE_TEST_SET_FILE --context CONTEXT_QUANTIZATION_FILE
 ```
 
-* _control_results.py_ : Compares the predictions produced by the specified model on the control questions and prints statistics summarizing the comparison. Additionally, it generates a plot showing the mean and standard deviation of the control questions and the model’s estimations. Run the script with:
+* _control_results.py_ : Compares the predictions produced by the specified model on the control questions and prints statistics summarizing the comparison. Additionally, it generates a plot showing the mean and standard deviation of the control questions and the model's estimations. Run the script with:
 
 ```bash
 cd baseline
@@ -176,7 +178,7 @@ We encourage the community to help **scale the dataset** by contributing **new t
 
 ### **Contributing New Trajectories**
 
-To contribute new trajectories:  
+To contribute with new trajectories:  
 
 1. **Record your data** according to the format described in section [Data format](#data-format).  
 2. **Validate each trajectory file** using the tool _checkjson.py_:  
@@ -194,11 +196,19 @@ To contribute new trajectories:
  * Luis J. Manso: l.manso@aston.ac.uk 
  * Pilar Bachiller-Burgos: pilarb@unex.es
 
-Alternatively, you can share your trajectories directly, and we will run the validation checks for you.
+If you struggle to validate your data, we can help you run the validation checks for you.
 
 Once validated, we will add your trajectories to the dataset and include your name/organization in the list of SocNav3 contributors.
 
 ### **Contributing New Ratings**
 
-To contribute new ratings, use our [Survey Tool](https://vps-fa03b8f8.vps.ovh.net:5421/).
-You’ll find detailed instructions there to guide you through the steps required to complete the rating process.
+To contribute with new ratings, use our [Survey Tool](LINK SOON) (LINK SOON).
+You'll find detailed instructions there to guide you through the steps required to complete the rating process. The survey is completely anonymous.
+
+## Data contributors
+The following are the current contributors of robot trajectories:
+* Pilar Bachiller (Simulated data acquried using [SocNavGym](https://github.com/gnns4hri/SocNavGym/)) -- Universida de Extremadura
+* Luis J. Manso (Real data using an RB-1 robot at Aston University) -- Aston University
+* Phani T. Singamaneni (simulated data on Gazebo) -- Laboratory for Analysis and Architecture of Systems - CNRS
+* No&eacute; P&eacute;rez (simulated data on Gazebo) -- Universidad Pablo de Olavide
+* Noriaki Hirose and Dhruv Shah (adaptation of data from the SACSoN dataset) -- Toyota, UC Berkeley, Google DeepMind
