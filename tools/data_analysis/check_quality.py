@@ -221,7 +221,7 @@ def compute_cohens(valid_responses, only_intra = False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='check_quality',
-                        description='Analizes the ratings provided by a set of raters and generates a consistency map')
+                        description='Analyzes the ratings provided by a set of raters and generates a consistency map')
     parser.add_argument('--ratings_dir', type=str, nargs="?", required = True, help="Directory containing the whole set of raters.")
     args = parser.parse_args()
 
