@@ -8,15 +8,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import cohen_kappa_score
+import argparse
 
 
 sys.stderr = sys.stdout
 
 Response = namedtuple('Response', ['id', 'keys', 'values', 'rep_keys', 'rep_values'])
-
-if len(sys.argv)<2:
-    print("Please provide a source directory")
-JSON_DIR = sys.argv[1]
 
 MIN_RELEVANT = 15
 RELEVANT = [
@@ -223,6 +220,14 @@ def compute_cohens(valid_responses, only_intra = False):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(prog='check_quality',
+                        description='Analizes the ratings provided by a set of raters and generates a consistency map')
+    parser.add_argument('--ratings_dir', type=str, nargs="?", required = True, help="Directory containing the whole set of raters.")
+    args = parser.parse_args()
+
+    JSON_DIR = args.ratings_dir
+
+
     responses = get_responses(JSON_DIR)
     valid_responses = filter_out_invalid_responses(responses)
     print(f"We have {len(valid_responses)} valid responses.")
@@ -256,29 +261,19 @@ if __name__ == "__main__":
         vmin = -1,
         vmax = 1
     )
-    # for i in range(consistency_matrix.shape[0]):
-    #     plt.text(i+0.5, i+0.5, f"{consistency_matrix[i, i]:.2f}", ha='center', va='center', fontweight='bold', fontsize=12, color="black")
-    #     if consistency_matrix[i,i]<0:
-    #         print('low consistency rater', consistency_matrix[i,i], valid_responses[i].id)
+    for i in range(consistency_matrix.shape[0]):
+        plt.text(i+0.5, i+0.5, f"{consistency_matrix[i, i]:.2f}", ha='center', va='center', fontweight='bold', fontsize=12, color="black")
+        if consistency_matrix[i,i]<0:
+            print('low consistency rater', consistency_matrix[i,i], valid_responses[i].id)
 
-    #     for j in range(consistency_matrix.shape[0]):
-    #         if i != j:
-    #             plt.text(i+0.5, j+0.5, f"{consistency_matrix[i, j]:.2f}", ha='center', va='center', fontsize=12, color="black")
+        for j in range(consistency_matrix.shape[0]):
+            if i != j:
+                plt.text(i+0.5, j+0.5, f"{consistency_matrix[i, j]:.2f}", ha='center', va='center', fontsize=12, color="black")
     plt.title("Consistency Matrix")
     plt.xlabel("Participant Index")
     plt.ylabel("Participant Index")
-    plt.savefig('consistency_matrix_selected.png')    
+    plt.savefig('consistency_matrix.png')    
     plt.show()
 
 
-# if __name__ == "__main__":
-#     responses = get_responses()
-#     valid_responses = filter_out_invalid_responses(responses)
-#     print(f"We have {len(valid_responses)} valid responses.")
-
-#     plt.figure()
-#     for response in valid_responses:
-#         print(["%.2f" % a for a in response.values[:MIN_RELEVANT]])
-#         plt.plot(response.keys[:MIN_RELEVANT], response.values[:MIN_RELEVANT])
-#     plt.show()
 

@@ -86,14 +86,14 @@ The data analysis tools enable the determination of rating quality and the selec
 
 ```bash
 cd tools/data_analysis
-python3 check_quality.py PATH_TO_THE_RATINGS_DIRECTORY
+python3 check_quality.py --ratings_dir PATH_TO_THE_RATINGS_DIRECTORY
 ```
 
 According to the consistency analysis, a subset of valid raters can be obtained using _select_valid_raters.py_ as follows:
 
 ```bash
 cd tools/data_analysis
-python3 select_valid_raters.py PATH_TO_THE_RATINGS_DIRECTORY OUTPUT_DIRECTORY
+python3 select_valid_raters.py --ratings_dir PATH_TO_THE_RATINGS_DIRECTORY --output_dir OUTPUT_DIRECTORY
 ```
 ### Data transformation
 
@@ -196,7 +196,7 @@ To contribute with new trajectories:
  * Luis J. Manso: l.manso@aston.ac.uk 
  * Pilar Bachiller-Burgos: pilarb@unex.es
 
-If you struggle to validate your data, we can help you run the validation checks for you.
+If you struggle to validate your data, we can help you run the validation checks.
 
 Once validated, we will add your trajectories to the dataset and include your name/organization in the list of SocNav3 contributors.
 
@@ -207,7 +207,7 @@ You'll find detailed instructions there to guide you through the steps required 
 
 ## Data contributors
 The following are the current contributors of robot trajectories:
-* **Pilar Bachiller** (Simulated data acquried using [SocNavGym](https://github.com/gnns4hri/SocNavGym/)) -- Universida de Extremadura
+* **Pilar Bachiller** (Simulated data acquried using [SocNavGym](https://github.com/gnns4hri/SocNavGym/)) -- Universidad de Extremadura
 * **Luis J. Manso** (Real data using an RB-1 robot at Aston University) -- Aston University
 * **Phani T. Singamaneni** (simulated data on Gazebo) -- Laboratory for Analysis and Architecture of Systems - CNRS
 * **No&eacute; P&eacute;rez** (simulated data on Gazebo) -- Universidad Pablo de Olavide
