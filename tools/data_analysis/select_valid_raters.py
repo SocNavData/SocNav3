@@ -62,7 +62,6 @@ if __name__ == "__main__":
     else:
         os.mkdir(OUTPUT_DIR)
 
-    # Compute and plot consistency matrix with intra-rater consistency
     consistency_matrix = compute_cohens(valid_responses, only_intra= False)
     select_reliable_raters(valid_responses, consistency_matrix)
 
