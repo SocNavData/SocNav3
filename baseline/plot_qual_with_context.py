@@ -122,7 +122,7 @@ for i_d, d in enumerate(FILES):
         qual_set = TrajectoryDataset(d, contextQ_file, path = data_root, frame_threshold = FRAME_THRESHOLD, label_exists= False, 
                                overwrite_context=context, data_augmentation=False)
         all_features = qual_set.get_all_features()
-        qual_loader = DataLoader(qual_set,  batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
+        qual_loader = DataLoader(qual_set,  batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn, num_workers = 4)
 
         dist_idx = all_features.index('robot_y')
         predictions = []
@@ -135,7 +135,7 @@ for i_d, d in enumerate(FILES):
                 for t in trajectories:
                     distances_t = []
                     for s in t:
-                        distances_t.append(s[dist_idx]*10)
+                        distances_t.append(s[dist_idx].to('cpu')*10)
                     min_dist = np.max(np.array(distances_t))
                     max_dist = np.min(np.array(distances_t))
                     dist = min_dist if abs(min_dist) > abs(max_dist) else max_dist
@@ -144,7 +144,7 @@ for i_d, d in enumerate(FILES):
                 slengths = slengths.to(device)
                 preds = model(trajectories, slengths)
                 predictions += preds.tolist()
-            print(distances)
+            # print(distances)
         sort_idx = np.argsort(np.array(distances))
         idx = np.arange(0, len(predictions), sample_step)
         q_indices[abbreviated_context] = np.array(distances)[sort_idx]

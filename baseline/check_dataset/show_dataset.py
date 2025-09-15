@@ -11,6 +11,9 @@ import os
 import json
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../tools/data_visualization'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'../../tools/data_transformation'))
+from data_conversions import tensor_to_sequence
+
 
 from view_data import draw_scenario, draw_frame
 
@@ -54,12 +57,12 @@ class MainWindow(QMainWindow):
     def load_trajectory(self, idx):
 
         self.metrics = self.data_sequence.all_features
-        self.traj_metrics = self.data_sequence.traj_metrics[idx]
-        self.trajectory_label = self.data_sequence.labels[idx]
+        m, l = self.data_sequence[idx]
+        self.traj_metrics = m.tolist() 
+        self.trajectory_label = l 
 
-        self.sequence_indices = self.data_sequence.sequence_indices[idx]
-
-        self.trajectory = self.data_sequence.orig_data[idx]
+        tensor_trajectory = self.data_sequence.current_trajectory
+        self.trajectory = tensor_to_sequence(tensor_trajectory) #self.data_sequence.orig_data[idx]
         self.ini_metrics_table()
 
         traj_steps = len(self.trajectory['sequence'])
@@ -105,7 +108,7 @@ class MainWindow(QMainWindow):
         self.ui.metrics_table.resizeColumnsToContents()            
 
     def update_metrics_table(self, metrics):
-        for idx, metric in enumerate(metrics.values()):
+        for idx, metric in enumerate(metrics):
             self.ui.metrics_table.setItem(idx, 1, QTableWidgetItem("{:4f}".format(metric)))
         self.ui.metrics_table.resizeColumnsToContents()            
 
@@ -118,9 +121,9 @@ class MainWindow(QMainWindow):
                                               self.GRID_ANGLE_ORIG, self.GRID_HEIGHT)
 
         self.imagesToShow = [(self.frame_img, self.ui.scenario_frame)]
-        closest_f = min(self.sequence_indices, key=lambda x:abs(x-f))
-        i = self.sequence_indices.index(closest_f)
-        self.update_metrics_table(self.traj_metrics[i])
+        # closest_f = min(self.sequence_indices, key=lambda x:abs(x-f))
+        # i = self.sequence_indices.index(closest_f)
+        self.update_metrics_table(self.traj_metrics[f])
 
         self.update()
 

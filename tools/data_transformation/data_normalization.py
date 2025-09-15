@@ -1,203 +1,125 @@
-import math
-import copy
+import torch
 
-def get_angle_transform(ga, old_pa, dx, dy):
-    """
-    Transform coordinates to goal-relative frame with rotation.
-    
-    Args:
-        ga: goal angle (in radians)
-        old_pa: original angle of entity
-        dx: x-coordinate relative to goal position
-        dy: y-coordinate relative to goal position
-    
-    Returns:
-        tuple: (transformed_angle, transformed_x, transformed_y)
-    """
-    # Rotate coordinates around origin by negative goal angle
-    cos_theta = math.cos(-ga)
-    sin_theta = math.sin(-ga)
-    
-    # Apply rotation matrix
-    new_x = dx * cos_theta - dy * sin_theta
-    new_y = dx * sin_theta + dy * cos_theta
-    
-    # Transform angle relative to goal angle
-    # new_angle = old_pa - ga
+def tensor_transform_to_goal_fr(tDict_sequence):
+    gx = tDict_sequence['goal']['x']
+    gy = tDict_sequence['goal']['y']
+    ga = tDict_sequence['goal']['a']
+    sin_theta = torch.sin(-ga)
+    cos_theta = torch.cos(-ga)
 
-    new_angle = math.atan2(math.sin(old_pa - ga), math.cos(old_pa - ga))
-    
-    return new_angle, new_x, new_y
+    rx = tDict_sequence['robot']['x']
+    ry = tDict_sequence['robot']['y']
+    ra = tDict_sequence['robot']['a']
+    vx = tDict_sequence['robot']['vx']
+    vy = tDict_sequence['robot']['vy']
+    va = tDict_sequence['robot']['va']
+    dx = rx - gx
+    dy = ry - gy
+    new_rx = dx * cos_theta - dy * sin_theta
+    new_ry = dx * sin_theta + dy * cos_theta
+    new_ra = torch.arctan2(torch.sin(ra - ga), torch.cos(ra - ga))
+    new_vx = vx * cos_theta - vy * sin_theta
+    new_vy = vx * sin_theta + vy * cos_theta
 
-def transform_robot_speed(r_vx, r_vy, ra_to_goal):
-    r_vlin = math.sqrt(r_vx**2 + r_vy**2)
+    robot = {}
+    robot['x'] = new_rx
+    robot['y'] = new_ry
+    robot['a'] = new_ra
+    robot['vx'] = new_vx
+    robot['vy'] = new_vy
+    robot['va'] = tDict_sequence['robot']['va']
+    robot['shape'] = tDict_sequence['robot']['shape']
+    robot['dist_travelled'] = tDict_sequence['robot']['dist_travelled']
 
-    new_r_vx = r_vlin*math.cos(-ra_to_goal)
-    new_r_vy = r_vlin*math.sin(-ra_to_goal)
+    if torch.numel(tDict_sequence['people']['exists'])>0:
+        px = tDict_sequence['people']['x']
+        py = tDict_sequence['people']['y']
+        pa = tDict_sequence['people']['a']
+        gx2d = torch.repeat_interleave(torch.unsqueeze(gx, 1), px.shape[1], dim=1)
+        gy2d = torch.repeat_interleave(torch.unsqueeze(gy, 1), px.shape[1], dim=1)
+        ga2d = torch.repeat_interleave(torch.unsqueeze(ga, 1), px.shape[1], dim=1)
+        sin_theta2d = torch.repeat_interleave(torch.unsqueeze(sin_theta, 1), px.shape[1], dim=1)
+        cos_theta2d = torch.repeat_interleave(torch.unsqueeze(cos_theta, 1), px.shape[1], dim=1)
+        dx = px - gx2d
+        dy = py - gy2d
+        new_px = dx * cos_theta2d - dy * sin_theta2d
+        new_py = dx * sin_theta2d + dy * cos_theta2d
+        new_pa = torch.arctan2(torch.sin(pa - ga2d), torch.cos(pa - ga2d))
 
-    return new_r_vx, new_r_vy
+        people = {}
+        people['x'] = new_px
+        people['y'] = new_py
+        people['a'] = new_pa
+        people['id'] = tDict_sequence['people']['id']
+        people['exists'] = tDict_sequence['people']['exists']
+    else:
+        people = tDict_sequence['people']
 
-def get_velocity_transform(x_vel, y_vel, ga):
-    """
-    Transform velocities to goal-relative frame with rotation.
-    """
-    # Rotate velocities by negative goal angle
-    cos_theta = math.cos(-ga)
-    sin_theta = math.sin(-ga)
-    
-    new_x_vel = x_vel * cos_theta - y_vel * sin_theta
-    new_y_vel = x_vel * sin_theta + y_vel * cos_theta
-    
-    return new_x_vel, new_y_vel
 
-def transform_wall_endpoints(x, y, goal_x, goal_y, goal_a):
-    """
-    Transform wall endpoints to goal-relative frame with rotation.
-    """
-    # Translate to goal-relative coordinates
-    dx = x - goal_x
-    dy = y - goal_y
-    
-    # Rotate around origin by negative goal angle
-    cos_theta = math.cos(-goal_a)
-    sin_theta = math.sin(-goal_a)
-    
-    new_x = dx * cos_theta - dy * sin_theta
-    new_y = dx * sin_theta + dy * cos_theta
-    
-    return new_x, new_y
+    if torch.numel(tDict_sequence['objects']['exists'])>0:
+        ox = tDict_sequence['objects']['x']
+        oy = tDict_sequence['objects']['y']
+        oa = tDict_sequence['objects']['a']
+        gx2d = torch.repeat_interleave(torch.unsqueeze(gx, 1), ox.shape[1], dim=1)
+        gy2d = torch.repeat_interleave(torch.unsqueeze(gy, 1), ox.shape[1], dim=1)
+        ga2d = torch.repeat_interleave(torch.unsqueeze(ga, 1), ox.shape[1], dim=1)
+        sin_theta2d = torch.repeat_interleave(torch.unsqueeze(sin_theta, 1), ox.shape[1], dim=1)
+        cos_theta2d = torch.repeat_interleave(torch.unsqueeze(cos_theta, 1), ox.shape[1], dim=1)
+        dx = ox - gx2d
+        dy = oy - gy2d
+        new_ox = dx * cos_theta2d - dy * sin_theta2d
+        new_oy = dx * sin_theta2d + dy * cos_theta2d
+        new_oa = torch.arctan2(torch.sin(oa - ga2d), torch.cos(oa - ga2d))
 
-def transform_to_goal_fr(data):
-    """
-    Transform all entities' coordinates in the sequence to the goal-based frame of reference.
-    """
-    transformed_data = {}
-    transformed_data['grid'] = copy.deepcopy(data['grid'])
-    # grid_x = transformed_data['grid']['x_orig']
-    # grid_y = transformed_data['grid']['y_orig']
-    # grid_angle = transformed_data['grid']['angle_orig']
-    if 'context_description' in data.keys():
-        transformed_data['context_description'] = data['context_description']
-    if 'label' in data.keys():
-        transformed_data['label'] = data['label']
-    transformed_sequence = []
-    
-    assert len(data['sequence']) > 0, "Sequence with no steps."
-    for idx, frame in enumerate(data['sequence']):
-        transformed_frame = {}
-        transformed_frame['timestamp'] = frame['timestamp']
-        
-        # Get goal position and angle
-        gx = frame['goal']['x']
-        gy = frame['goal']['y']
-        ga = frame['goal']['angle']
-        
-        # Transform robot
-        rx = frame['robot']['x'] - gx
-        ry = frame['robot']['y'] - gy
-        rx_vel = frame['robot']['speed_x']
-        ry_vel = frame['robot']['speed_y']
-        old_ra = frame['robot']['angle']
-        
-        new_ra, rx, ry = get_angle_transform(ga, old_ra, rx, ry)
+        objects = {}
+        objects['x'] = new_ox
+        objects['y'] = new_oy
+        objects['a'] = new_oa
+        objects['w'] = tDict_sequence['objects']['w']
+        objects['l'] = tDict_sequence['objects']['l']
+        objects['shape'] = tDict_sequence['objects']['shape']
+        objects['type'] = tDict_sequence['objects']['type']
+        objects['exists'] = tDict_sequence['objects']['exists']
+    else:
+        objects = tDict_sequence['objects']
 
-        # new_rx_vel, new_ry_vel = transform_robot_speed(rx_vel, ry_vel, -new_ra)
+    if torch.numel(tDict_sequence['walls']['x'])>0:
+        wx = tDict_sequence['walls']['x']
+        wy = tDict_sequence['walls']['y']
+        gx2d = torch.repeat_interleave(torch.unsqueeze(gx, 1), wx.shape[0], dim=1)
+        gy2d = torch.repeat_interleave(torch.unsqueeze(gy, 1), wx.shape[0], dim=1)
+        sin_theta2d = torch.repeat_interleave(torch.unsqueeze(sin_theta, 1), wx.shape[0], dim=1)
+        cos_theta2d = torch.repeat_interleave(torch.unsqueeze(cos_theta, 1), wx.shape[0], dim=1)
+        dx = wx - gx2d[-1]
+        dy = wy - gy2d[-1]
+        new_wx = dx * cos_theta2d[-1] - dy * sin_theta2d[-1]
+        new_wy = dx * sin_theta2d[-1] + dy * cos_theta2d[-1]
+        walls = {}
+        walls['x'] = new_wx
+        walls['y'] = new_wy
+    else:
+        walls = tDict_sequence['walls']
 
-        # new_rx_vel, new_ry_vel = get_velocity_transform(rx_vel, ry_vel, -new_ra)
+    goal = tDict_sequence['goal']
+    goal['x'] = torch.zeros_like(gx)
+    goal['y'] = torch.zeros_like(gy)
+    goal['a'] = torch.zeros_like(ga)
 
-        if idx == 0:
-            new_rx_vel = 0
-            new_ry_vel = 0
-            new_ra_vel = 0
-        else:
-            diff_time = transformed_frame['timestamp']-transformed_sequence[idx-1]['timestamp']
-            new_rx_vel = (rx - transformed_sequence[idx-1]['robot']['x'])/diff_time
-            new_ry_vel = (ry - transformed_sequence[idx-1]['robot']['y'])/diff_time
-            diff_ra = (new_ra - transformed_sequence[idx-1]['robot']['angle'])
-            new_ra_vel = math.atan2(math.sin(diff_ra), math.cos(diff_ra))/diff_time
-        
-        transformed_robot = {
-            "x": rx,
-            "y": ry,
-            "angle": new_ra,
-            "speed_x": new_rx_vel,
-            "speed_y": new_ry_vel,
-            "speed_a": new_ra_vel, 
-            "shape": frame['robot']['shape']
-        }
-        transformed_frame['robot'] = transformed_robot
-        
-        # Transform people
-        transformed_people = []
-        for person in frame["people"]:
-            dx = person["x"] - gx
-            dy = person["y"] - gy
-            old_pa = person['angle']
-            
-            pa, dx, dy = get_angle_transform(ga, old_pa, dx, dy)
-            
-            transformed_person = {
-                "id": person['id'],
-                "x": dx,
-                "y": dy,
-                "angle": pa
-            }
-            transformed_people.append(transformed_person)
-        transformed_frame['people'] = transformed_people
-        
-        # Transform objects
-        transformed_objects = []
-        for obj in frame["objects"]:
-            dx = obj["x"] - gx
-            dy = obj["y"] - gy
-            old_oa = obj['angle']
-            
-            oa, dx, dy = get_angle_transform(ga, old_oa, dx, dy)
-            
-            transformed_object = {
-                "id": obj['id'],
-                "x": dx,
-                "y": dy,
-                "angle": oa,
-                "type": obj['type'],
-                "shape": obj['shape']
-            }
-            transformed_objects.append(transformed_object)
-        transformed_frame['objects'] = transformed_objects
-        
-        # Set goal as origin with zero angle
-        transformed_goal = {
-            "type": frame['goal']['type'],
-            "human": frame['goal']['human'],
-            "x": 0,
-            "y": 0,
-            "angle": 0,
-            "pos_threshold": frame['goal']['pos_threshold'],
-            "angle_threshold": frame['goal']['angle_threshold']
-        }
-        transformed_frame['goal'] = transformed_goal
-        transformed_sequence.append(transformed_frame)
-    
-    transformed_data['sequence'] = transformed_sequence
-    
-    # Transform walls
-    transformed_walls = []
-    if len(data['walls']):
-        for wall in data['walls']:
-            x1_transformed, y1_transformed = transform_wall_endpoints(
-                wall[0], wall[1], gx, gy, ga
-            )
-            # print(f"Wall1 before{wall[0], wall[1]} and wall after {x1_transformed, y1_transformed}")
-            x2_transformed, y2_transformed = transform_wall_endpoints(
-                wall[2], wall[3], gx, gy, ga
-            )
-            # print(f"Wall2 before{wall[2], wall[3]} and wall after {x2_transformed, y2_transformed}")
-            transformed_walls.append([
-                x1_transformed, y1_transformed,
-                x2_transformed, y2_transformed
-            ])
-    transformed_data['walls'] = transformed_walls
+    timestamp = tDict_sequence['timestamp']
+    indices = tDict_sequence['indices']
+    metrics_ft = tDict_sequence['metrics']
+    context = tDict_sequence['context']
 
-    return transformed_data
+    tensor_dict = { 'timestamp': timestamp,
+                    'indices': indices,
+                    'robot': robot,
+                    'goal': goal,
+                    'people': people,
+                    'objects': objects,
+                    'walls': walls,
+                    'metrics': metrics_ft,
+                    'context': context}
 
+
+    return tensor_dict
 

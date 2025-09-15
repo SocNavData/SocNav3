@@ -20,7 +20,7 @@ RNN_TYPE: 'GRU' #GRU or LSTM
 OUT_SIZE: 1
 ACTIVATION: 'sigmoid'
 ADD_CONTEXT_TO_OUTPUT: True
-DATAPOINT_LIMIT: -1  # Limit of graphs to load
+DATAPOINT_LIMIT: -1  # Limit of trajectories to load
 SEED: 123456
 SAVE_PLOTS_LOCALLY: True #Set to False if you dont want to save the qualitative test results and expected vs predicted plots
 

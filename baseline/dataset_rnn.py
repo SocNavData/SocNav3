@@ -10,20 +10,20 @@ import os
 import pandas as pd
 import sys
 import random
+import copy
 
 sys.path.append(os.path.join(os.path.dirname(__file__),'../tools/data_transformation'))
-from data_mirroring import mirror_sequence
-from data_normalization import transform_to_goal_fr
+from data_conversions import sequence_to_tensor, clone_sequence
+from data_mirroring import mirror_tDic_sequence, tensor_transform_with_random_mirroring
+from data_normalization import tensor_transform_to_goal_fr
+
+from torch.utils.data import DataLoader
 
 
-SOCIAL_SPACE_THRESHOLD = 0.4
-
-
-# Custom Dataset for loading JSON files
 
 class TrajectoryDataset(Dataset):
     def __init__(self, data_file, contextQ_file, path = '../dataset', limit= -1,  frame_threshold = 0.1, label_exists = True, 
-                 overwrite_context = False, data_augmentation = False, reload = False):
+                 overwrite_context = False, data_augmentation = False, load_time_augmentation = True, reload = False):
         self.orig_data = []
         self.data = []
         self.mirrored_data = []
@@ -36,7 +36,7 @@ class TrajectoryDataset(Dataset):
         self.data_file = data_file
 
         if type(data_file) is str:
-            DA = '_DA_' if data_augmentation else ''
+            DA = '_DA_' if data_augmentation and load_time_augmentation else ''
             self.reload_fname = '.'.join(data_file.split('.')[:-1]) + '_' + contextQ_file.split('/')[-1].split('.csv')[0] + DA + '.pytorch'
         else:
             self.reload_fname = ''
@@ -46,8 +46,9 @@ class TrajectoryDataset(Dataset):
         self.overwrite_contexts = overwrite_context
         self.frame_threshold = frame_threshold
         self.data_augmentation = data_augmentation
+        self.load_time_augmentation = load_time_augmentation
         self.context_df = pd.read_csv(contextQ_file, index_col='context') 
-        
+
         self.robot_features = ['robot_x', 'robot_y', 'robot_a', 'speed_x', 'speed_y', 'speed_a', 'acceleration_x', 'acceleration_y']
 
         self.metrics_features = ['success', 'hum_exists', 'wall_exists', 'dist_nearest_hum', 'dist_nearest_obj', 'dist_wall', 'dist_goal',
@@ -78,6 +79,8 @@ class TrajectoryDataset(Dataset):
                             'global_dist_nearest_hum': 10, 'path_efficiency_ratio': 1, 'step_ratio': 1, 'episode_end': 1,
                             'goal_pos_threshold': 10, 'goal_angle_threshold': np.pi}
 
+        for var in self.context_features:
+            self.max_metric_values[var] = 100
 
         if reload is True:
             if os.path.exists(self.reload_fname):
@@ -100,6 +103,7 @@ class TrajectoryDataset(Dataset):
         elif type(self.data_file) is list:
             ds_files = self.data_file
 
+        self.ds_files = ds_files
         for i, filename in enumerate(ds_files):
             if filename.endswith('.json'):
                 file_path = os.path.join(self.path, filename)
@@ -108,33 +112,30 @@ class TrajectoryDataset(Dataset):
                         t_data = json.load(f)
                     except:
                         print("FileName :", file_path)
-                    # Adjust keys based on your file structure
-                    
-                    t_data_normalized = transform_to_goal_fr(t_data)
-                    self.orig_data.append(t_data_normalized)
-                    trajectory, feats_dict, seq_indices = self.gather_data(t_data_normalized)
+
+
+                    if 'context_description' in t_data.keys(): #not self.overwrite_contexts:
+                        context_desc = t_data['context_description']
+                    else:
+                        context_desc = self.overwrite_contexts
+                    context = self.context_df.loc[context_desc.rstrip()].to_dict()
+
+                    tensor_dict = sequence_to_tensor(t_data, self.frame_threshold, context)
+                    tensor_dict_to_goal = tensor_transform_to_goal_fr(tensor_dict)
                     if self.label_exists and 'label' in t_data: 
                         rating = t_data['label']
                     else:
                         rating = 0.0
-                    self.data.append(trajectory)
+                    self.data.append(tensor_dict_to_goal)
                     self.labels.append(rating)
-                    self.traj_metrics.append(feats_dict)
-                    self.sequence_indices.append(seq_indices)
 
-
-                    if self.data_augmentation:
-
-                        t_data_mirrored = mirror_sequence(t_data_normalized)
-
-                        self.orig_data.append(t_data_mirrored)
-                        trajectory, feats_dict, seq_indices = self.gather_data(t_data_mirrored)
-                        self.data.append(trajectory)
+                    if self.data_augmentation and self.load_time_augmentation:
+                        tensor_dict_clone = clone_sequence(tensor_dict_to_goal)
+                        t_data_mirrored = mirror_tDic_sequence(tensor_dict_clone)
+                        self.data.append(t_data_mirrored)
                         self.labels.append(rating)
-        
-                        self.traj_metrics.append(feats_dict)
-                        self.sequence_indices.append(seq_indices)
 
+                    
             if i%1000 == 0:
                 print(i)
             if i + 1 >= self.limit and self.limit > 0:
@@ -148,230 +149,7 @@ class TrajectoryDataset(Dataset):
                 }, self.reload_fname)
 
 
-    def get_metrics(self, frame, walls, prev_frame, cur_step, last_step):
-        cur_metrics = {}
-        cur_timestamp = frame['timestamp']
-        # print("Previous Frame",prev_frame)
-        prev_timestamp = prev_frame['timestamp']
-        window = cur_timestamp - prev_timestamp
-        for feature in self.metrics_features:
-            cur_metrics[feature] = 0
-        #Get robot features for later
-        r_x = frame['robot']['x']
-        r_y = frame['robot']['y']
-        r_a = frame['robot']['angle']
-        r_vx = frame['robot']['speed_x']
-        r_vy = frame['robot']['speed_y']
-        r_va = frame['robot']['speed_a']
-        x_moved = abs(r_x - prev_frame['robot']['x'])
-        y_moved = abs(r_y - prev_frame['robot']['y'])
-        dist_moved = math.sqrt((x_moved)**2 + (y_moved)**2)
-        self.distance_travelled += dist_moved
-
-
-        cur_metrics['robot_x'] = r_x
-        cur_metrics['robot_y'] = r_y
-        cur_metrics['robot_a'] = r_a
-
-        cur_metrics['speed_x'] = r_vx
-        cur_metrics['speed_y'] = r_vy
-        cur_metrics['speed_a'] = r_va
-
-        if window != 0:
-            p_vx, p_vy = prev_frame['robot']['speed_x'], prev_frame['robot']['speed_y']
-            acc_x = (cur_metrics['speed_x'] - p_vx) / window
-            acc_y = (cur_metrics['speed_y'] - p_vy) / window
-        else:
-            acc_x = 0
-            acc_y = 0
-
-
-        cur_metrics['acceleration_x'] = acc_x
-        cur_metrics['acceleration_y'] = acc_y
-
-        #Goal Features
-        g_x = frame['goal']['x']
-        g_y = frame['goal']['y']
-        g_a = frame['goal']['angle']
-
-
-        r_radius = frame['robot']['shape']['length']/2.   #since length and width are the same
-
-        g_dist =  max(0, math.sqrt((g_x - r_x)**2 + (g_y - r_y)**2))
-        if self.initial_distance_to_goal < 0:
-            self.initial_distance_to_goal = g_dist
-        cur_metrics['dist_goal'] = g_dist
-        g_thr = frame['goal']['pos_threshold'] + 0.1
-        a_thr = frame['goal']['angle_threshold']
-        cur_metrics['goal_pos_threshold'] = g_thr
-        cur_metrics['goal_angle_threshold'] = a_thr
-        cur_metrics['path_efficiency_ratio'] = min(1, self.initial_distance_to_goal/(self.distance_travelled+1e-6))
-        # print(cur_timestamp, self.distance_travelled)
-        #Check for goal success
-        if g_dist <= g_thr and abs(np.arctan2(np.sin(g_a - r_a), np.cos(g_a - r_a))) <= a_thr:
-            cur_metrics['success'] = 1
-        #Calculate human metrics
-        min_hdist = self.max_metric_values['dist_nearest_hum']    #Initialising distance with a large value
-        h_radius = 0.3
-        min_ttc = float('inf')     #Time to collision
-        max_fear = -1
-        max_panic = -1
-        for human in frame['people']:
-            cur_metrics['hum_exists'] = 1
-            h_x = human['x']
-            h_y = human['y']
-
-
-            dist_to_robot = max(0, math.sqrt((h_x - r_x)**2 + (h_y - r_y)**2) - (r_radius + h_radius))
-            min_hdist = min(min_hdist, dist_to_robot)
-            if min_hdist == 0:
-                cur_metrics['hum_collision_flag'] = 1
-            #Calculate num of humans in vicinity
-            if dist_to_robot < SOCIAL_SPACE_THRESHOLD:                
-                cur_metrics['num_near_humansA'] += 1
-                cur_metrics['social_space_intrusionA'] = 1
-            if dist_to_robot < SOCIAL_SPACE_THRESHOLD*1.5:
-                cur_metrics['num_near_humansB'] += 1
-                cur_metrics['social_space_intrusionB'] = 1
-            if dist_to_robot < SOCIAL_SPACE_THRESHOLD*2.0:
-                cur_metrics['num_near_humansC'] += 1
-                cur_metrics['social_space_intrusionC'] = 1
-        cur_ttc = metrics.get_ttc(frame, prev_frame)
-        valid_ttc_exists = False    
-        # Process each dictionary in the list
-        for item in cur_ttc:
-            # Handle ttc - exclude -1 values
-            if item['ttc'] != -1:
-                valid_ttc_exists = True
-                min_ttc = min(min_ttc, item['ttc'])
-                
-            # Handle fear - find maximum value
-            if item['fear'] > max_fear:
-                max_fear = item['fear']
-                
-            # Handle panic - find maximum value
-            if item['panic'] > max_panic:
-                max_panic = item['panic']
-        
-        # If no valid ttc values were found, set min_ttc to -1
-        if not valid_ttc_exists:
-            min_ttc = self.MAX_TTC #-1
-        if max_panic<0:
-            max_panic = 0
-        if max_fear<0:
-            max_fear = 0
-        cur_metrics['min_time_to_collision'] = min_ttc
-        cur_metrics['max_fear'] = max_fear
-        cur_metrics['max_panic'] = max_panic
-
-        cur_metrics['dist_nearest_hum'] = min_hdist
-        self.global_dist_nearest_hum = min(min_hdist, self.global_dist_nearest_hum)
-        cur_metrics['global_dist_nearest_hum'] = self.global_dist_nearest_hum
-
-        min_odist = self.max_metric_values['dist_nearest_obj']
-        robot = Point(r_x, r_y).buffer(r_radius)
-        for object in frame['objects']:
-            o_x = object['x']
-            o_y = object['y']
-            o_angle = object['angle']
-            dist_to_robot = metrics.get_dist_from_obj(object, o_x, o_y, o_angle, robot)
-            min_odist = min(min_odist, dist_to_robot)
-            if min_odist == 0:
-                cur_metrics['object_collision_flag'] = 1
-        cur_metrics['dist_nearest_obj'] = min_odist
-
-        #Calculate distance to wall
-        min_wdist = self.max_metric_values['dist_wall']
-        if len(walls)>0:
-            cur_metrics['wall_exists'] = 1
-            for wall in walls:
-                w_x1, w_y1 = wall[0], wall[1]
-                w_x2, w_y2 = wall[2], wall[3]
-                w_dist = metrics.get_wall_distance(r_x, r_y, r_radius, w_x1, w_y1, w_x2, w_y2)
-                min_wdist = min(w_dist, min_wdist)
-                if w_dist == 0:
-                    cur_metrics['wall_collision_flag'] = 1
-        cur_metrics['dist_wall'] = min_wdist
-
-        # Squared metrics
-        cur_metrics['num_near_humansA2'] = cur_metrics['num_near_humansA']**2
-        cur_metrics['num_near_humansB2'] = cur_metrics['num_near_humansB']**2
-        cur_metrics['num_near_humansC2'] = cur_metrics['num_near_humansC']**2
-        cur_metrics['min_time_to_collision2'] = cur_metrics['min_time_to_collision']**2
-
-        cur_metrics['step_ratio'] = cur_step / last_step
-        cur_metrics['episode_end'] = 1 if cur_step == last_step else 0
-
-        for m in cur_metrics:
-            max_val = self.max_metric_values[m]
-            cur_metrics[m] = max(-max_val, min(cur_metrics[m], max_val))/max_val
-
-        return cur_metrics
-
-    def gather_data(self, data):
-        sequence = data['sequence']
-        trajectory_data = []
-        detailed_feats = []
-        walls = data['walls']
-        last_timestamp = -float('inf') #np.sequence[0]['timestamp']
-        seq_indices = []
-        self.initial_distance_to_goal = -1
-        self.distance_travelled = 0
-        self.global_dist_nearest_hum = self.max_metric_values['global_dist_nearest_hum']
-        prev_index = 0
-
-        last_i = len(sequence)-1
-        for i, frame in enumerate(sequence):
-            current_timestamp = frame['timestamp']
-            if current_timestamp-last_timestamp >= self.frame_threshold or i==last_i:
-                frame_features = []
-                seq_indices.append(i)
-                if i == 0:
-                    prev_frame = frame
-                else:
-                    prev_frame = sequence[prev_index]
-                # print("Prev Frame here:", prev_frame)
-                cur_metrics = self.get_metrics(frame, walls, prev_frame, i, last_i)
-                # json_metrics.append(cur_metrics)
-                for feature in self.robot_features:
-                    frame_features.append(cur_metrics.get(feature, 0.0))
-                for feature in self.metrics_features:
-                    frame_features.append(cur_metrics.get(feature, 0.0))
-                for feature in self.goal_features:
-                    frame_features.append(cur_metrics.get(feature, 0.0))
-                if 'context_description' in data.keys(): #not self.overwrite_contexts:
-                    context_desc = data['context_description']
-                else:
-                    context_desc = self.overwrite_contexts
-                context = self.context_df.loc[context_desc.rstrip()].to_dict()
-                for feature in self.context_features:
-                    # print(f"Contexts :{context.get(feature)}")
-                    frame_features.append(context.get(feature, 0.0)/100)
-                #add goal 
-                # goal = frame['goal']
-                # for feature in goal_features:
-                #     frame_features.append(goal.get(feature, 0.0))
-                last_timestamp = current_timestamp
-                # print(frame_features, len(frame_features))
-                prev_index = i
-                trajectory_data.append(frame_features)
-                detailed_feats.append(dict(map(lambda i,j : (i,j) , self.all_features, frame_features)))
-                # print(f"Frame Features :{detailed_feats}")
-        if trajectory_data:  # Only add non-empty sequences
-            # steps -= 1
-            # step_feat = self.all_features.index('step_ratio')
-            # for t in range(len(trajectory_data)):
-            #     trajectory_data[t][step_feat] /= steps
-            #     detailed_feats[t]['step_ratio'] = trajectory_data[t][step_feat]
-
-            # with open(metrics_file, "w") as f:
-            #     json.dump(json_metrics, f, indent=4)
-
-            return trajectory_data, detailed_feats, seq_indices
-        else:
-            print("sequence too short!! Returning empty sequence")
-            return [[0.0] * len(self.all_features)], detailed_feats, seq_indices  # Return a dummy sequence if empty
-        
+      
     def get_all_features(self):
         return self.all_features
 
@@ -382,39 +160,24 @@ class TrajectoryDataset(Dataset):
         return len(self.data)+len(self.mirrored_data)
     
     def __getitem__(self, idx):
-        # data = self.orig_data[idx]
-        # if self.data_augmentation:
-        #     if random.randint(0,1)==1:
-        #         data = mirror_sequence(data)
-
-        # trajectory, feats_dict, seq_indices = self.gather_data(data)
-
-        # if self.data_augmentation and random.randint(0,1)==1:
-        #     data = self.mirrored_data[idx]
-        # else:
-        #     data = self.data[idx]
-
-        # if self.data_augmentation:
-        #     if idx%2==0:
-        #       data = self.data[idx//2]
-        #     else:
-        #       data = self.mirrored_data[idx//2]
-        #     label = self.labels[idx//2]
-        # else:
-        #     data = self.data[idx]
-        #     label = self.labels[idx]
-
         data = self.data[idx]
+        if self.data_augmentation and not self.load_time_augmentation:
+            data = tensor_transform_with_random_mirroring(data)
+
+        self.current_trajectory = data
+
         label = self.labels[idx]
 
+        metrics_sequence = metrics.compute_metrics(data)
+        final_tensor = metrics.normalize_and_cat_features(metrics_sequence, self.max_metric_values, self.all_features)
 
-        traj = torch.tensor(data, dtype=torch.float32)
+        traj = final_tensor.to(torch.float32)
         label = torch.tensor(label, dtype=torch.float32)
         return traj, label
 
 def collate_fn(batch):
     sequences, labels = zip(*batch)  # Separate sequences and labels
-    sequence_lengths = [len(s)-1 for s in sequences]
+    sequence_lengths = [s.shape[0]-1 for s in sequences]
     sequences = pad_sequence(sequences, batch_first=True, padding_value=0)  # Pad sequences
     labels = torch.stack(labels)  # Convert labels to tensor
     return sequences, labels, torch.tensor(sequence_lengths, dtype=torch.long)

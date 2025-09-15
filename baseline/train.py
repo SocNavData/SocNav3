@@ -11,8 +11,6 @@ import os, io
 import metrics
 import yaml
 import argparse
-# import warnings
-# warnings.simplefilter("error")
 import wandb
 
 from dataset_rnn import TrajectoryDataset, collate_fn
@@ -65,6 +63,7 @@ Q_FILES = config_qtest["FILES"]
 Q_NAMES = config_qtest["NAMES"]
 COLORS = config_qtest["COLORS"]
 CONTEXTS = config_qtest["CONTEXTS"]
+ABBREVIATED_CONTEXTS = config_qtest["ABBREVIATED_CONTEXTS"]
 
 
 SAVE_NAME = '_'.join(['ALL_rm_rf_try', RNN_TYPE, LOSS, str(NUM_LAYERS), str(LR), str(HIDDEN_SIZE)])
@@ -111,7 +110,8 @@ def train_model(hidden_size=256, num_layers=10,
     else:
         context_features = 0
 
-    val_dataset = TrajectoryDataset(DEV_FILE, CONTEXTQ_FILE, path = DATASET_PATH, limit=DATA_LIMIT, frame_threshold=FRAME_THRESHOLD, data_augmentation = DATA_AUGMENTATION, reload = True)
+    #######
+    val_dataset = TrajectoryDataset(DEV_FILE, CONTEXTQ_FILE, path = DATASET_PATH, limit=DATA_LIMIT, frame_threshold=FRAME_THRESHOLD, data_augmentation = False, reload = True)
     val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
 
     model = RNNModel(input_size, hidden_size, num_layers, RNN_TYPE, linear_layers = LINEAR_LAYERS, 
@@ -181,7 +181,7 @@ def train_model(hidden_size=256, num_layers=10,
             for i, q_tuple in enumerate(q_list):
                 full_preds = []
                 # print(f"Q_tuple {i}:{len(q_tuple)}")
-                context, files, qual_loader = q_tuple
+                context, files, qual_loader, abbr_context = q_tuple
                 # print(f"Context :{context}, files: {files}, qual_loader: {qual_loader}")
                 with torch.no_grad():
                     # print(f"======================\n{filename=}")
@@ -192,7 +192,7 @@ def train_model(hidden_size=256, num_layers=10,
                         preds = model(trajectories, slengths)
                         full_preds += preds.tolist()
                 # print(f"Predictions for Context {context}: \n {all_preds}")
-                q_preds[context] = full_preds
+                q_preds[abbr_context] = full_preds
             for idx, context in enumerate(q_preds.keys()):
                 # axes_flat[idx] = plot_qualitative_ratings(q_preds[context], speed, context, COLORS[i_d], ax=axes_flat[idx])
                 axes_flat[idx] = plot_qualitative_multiple(q_preds[context], speed, context, COLORS[i_d], ax=axes_flat[idx])
@@ -331,11 +331,11 @@ def get_qual_loader(file_path):
     with open(file_path) as set_file:
         files = set_file.read().splitlines()
     # context = {"urgency":98., "importance":98., "risk":95 , "distance_from_human":95., "minimum_speed":20, "average_speed":15., "maximum_speed":15.}
-    for context in CONTEXTS:
+    for abbreviated_context, context in zip(ABBREVIATED_CONTEXTS, CONTEXTS):
         print(f"Creating q_test for: {context}")
         qual_set = TrajectoryDataset(file_path, CONTEXTQ_FILE, path = Q_TEST_PATH, frame_threshold=FRAME_THRESHOLD, label_exists=False, overwrite_context=context)
         qual_loader = DataLoader(qual_set,  batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
-        q_loaders.append((context, files, qual_loader))
+        q_loaders.append((context, files, qual_loader, abbreviated_context))
     return q_loaders
 # Load and process test datasets
 qual_loaders = {}
