@@ -1,6 +1,6 @@
 # SocNav3 dataset code and tools
 
-Official repository of the paper [Towards Data-Driven Metrics for Social Robot Navigation Benchmarking](...)
+Official repository of the paper [Towards Data-Driven Metrics for Social Robot Navigation Benchmarking](https://arxiv.org/abs/2509.01251)
 
 This project is a joined effort towards the development of a data-driven Social Robot Navigation metric to facilitate benchmarking and policy optimization. Motivated by the lack of a standardized method to benchmark Social robot Navigation (SocNav) policies, we propose an **A**ll-encompassing **L**earned **T**rajectory-wise (ALT) metric, which is learned directly from human evaluations of full robot trajectories, conditioned on goals and contexts.
 
