@@ -24,14 +24,8 @@ from torch.utils.data import DataLoader
 class TrajectoryDataset(Dataset):
     def __init__(self, data_file, contextQ_file, path = '../dataset', limit= -1,  frame_threshold = 0.1, label_exists = True, 
                  overwrite_context = False, data_augmentation = False, load_time_augmentation = True, reload = False):
-        self.orig_data = []
         self.data = []
-        self.mirrored_data = []
         self.labels = []
-        self.traj_metrics = []
-        self.mirrored_traj_metrics = []
-        self.mirrored_orig_data = []
-        self.sequence_indices = []
         self.path = path
         self.data_file = data_file
 
@@ -86,7 +80,6 @@ class TrajectoryDataset(Dataset):
             if os.path.exists(self.reload_fname):
                 loaded = torch.load(self.reload_fname)
                 self.data = loaded['data']
-                self.mirrored_data = loaded['mirrored_data']
                 self.labels = loaded['labels']
                 print("number of trajectories for ", self.data_file, len(self.data))
                 return
@@ -144,7 +137,6 @@ class TrajectoryDataset(Dataset):
         if reload:
             torch.save({
                 'data': self.data,
-                'mirrored_data': self.mirrored_data,
                 'labels': self.labels
                 }, self.reload_fname)
 
@@ -157,7 +149,7 @@ class TrajectoryDataset(Dataset):
         return self.context_features
 
     def __len__(self):
-        return len(self.data)+len(self.mirrored_data)
+        return len(self.data)
     
     def __getitem__(self, idx):
         data = self.data[idx]

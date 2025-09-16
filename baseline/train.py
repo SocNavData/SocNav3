@@ -111,7 +111,7 @@ def train_model(hidden_size=256, num_layers=10,
         context_features = 0
 
     #######
-    val_dataset = TrajectoryDataset(DEV_FILE, CONTEXTQ_FILE, path = DATASET_PATH, limit=DATA_LIMIT, frame_threshold=FRAME_THRESHOLD, data_augmentation = False, reload = True)
+    val_dataset = TrajectoryDataset(DEV_FILE, CONTEXTQ_FILE, path = DATASET_PATH, limit=DATA_LIMIT, frame_threshold=FRAME_THRESHOLD, data_augmentation = True, reload = True)
     val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
 
     model = RNNModel(input_size, hidden_size, num_layers, RNN_TYPE, linear_layers = LINEAR_LAYERS, 

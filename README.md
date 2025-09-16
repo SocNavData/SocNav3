@@ -207,8 +207,8 @@ You'll find detailed instructions there to guide you through the steps required 
 
 ## Data contributors
 The following are the current contributors of robot trajectories:
-* **Pilar Bachiller** (Simulated data acquried using [SocNavGym](https://github.com/gnns4hri/SocNavGym/)) -- Universidad de Extremadura
+* **Pilar Bachiller** (Simulated data acquired using [SocNavGym](https://github.com/gnns4hri/SocNavGym/)) -- Universidad de Extremadura
 * **Luis J. Manso** (Real data using an RB-1 robot at Aston University) -- Aston University
-* **Phani T. Singamaneni** (simulated data on Gazebo) -- Laboratory for Analysis and Architecture of Systems - CNRS
-* **No&eacute; P&eacute;rez** (simulated data on Gazebo) -- Universidad Pablo de Olavide
-* **Noriaki Hirose** and **Dhruv Shah** (adaptation of data from the SACSoN dataset) -- Toyota, UC Berkeley, Google DeepMind
+* **Phani T. Singamaneni** (Simulated data on Gazebo) -- Laboratory for Analysis and Architecture of Systems - CNRS
+* **No&eacute; P&eacute;rez** (Simulated data on Gazebo) -- Universidad Pablo de Olavide
+* **Noriaki Hirose** and **Dhruv Shah** (Adaptation of data from the SACSoN dataset) -- Toyota, UC Berkeley, Google DeepMind
