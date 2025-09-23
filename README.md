@@ -202,7 +202,7 @@ Once validated, we will add your trajectories to the dataset and include your na
 
 ### **Contributing New Ratings**
 
-To contribute with new ratings, use our [Survey Tool](LINK SOON) (LINK SOON).
+To contribute with new ratings, use our [Survey Tool](https://survey.socnav3.com).
 You'll find detailed instructions there to guide you through the steps required to complete the rating process. The survey is completely anonymous.
 
 ## Data contributors
